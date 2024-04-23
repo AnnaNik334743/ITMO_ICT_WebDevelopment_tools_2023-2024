@@ -46,3 +46,8 @@ nav:
       - Intro: lab1/intro.md
       - Body: lab1/body.md
       - Conclusion: lab1/conclusion.md
+  - Lab 2:
+      - Intro: lab2/intro.md
+      - Task1: lab2/task1.md
+      - Task2: lab2/task2.md
+      - Conclusion: lab2/conclusion.md
