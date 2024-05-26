@@ -51,3 +51,9 @@ nav:
       - Task1: lab2/task1.md
       - Task2: lab2/task2.md
       - Conclusion: lab2/conclusion.md
+  - Lab 3:
+      - Intro: lab3/intro.md
+      - ML: lab3/ml.md
+      - Celery+Redis: lab3/celery.md
+      - Docker: lab3/docker.md
+      - Conclusion: lab3/conclusion.md
