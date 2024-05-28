@@ -1,6 +1,6 @@
 Реализованное приложение было упаковано в Docker, чтобы во фразе "it works on my machine" не возникало слово "only".
 
-Dockerfile:
+Dockerfile celery_app:
 ```
 FROM python:3.10
 
@@ -9,20 +9,34 @@ WORKDIR /app
 COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
+```
+
+Dockerfile fastapi_app:
+```
+FROM python:3.10
+
+WORKDIR /app
+
+COPY . .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 docker-compose.yml:
 ```
-version: "1.0"
+version: "3.0"
 
 services:
   db:
     image: postgres:14.1
-    hostname: ${DB_HOST}
     container_name: db
     restart: always
     volumes:
-      - ./db_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
@@ -32,42 +46,59 @@ services:
 
   redis:
     image: redis:7.2.4
-    hostname: ${REDIS_HOST}
     container_name: redis
     ports:
       - "6379:6379"
     restart: always
 
-  app:
+  fastapi_app:
     build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: app
-    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+      context: ./fastapi_app
+    container_name: fastapi_app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
     restart: always
     volumes:
-      - ./app_data:/var/lib/data
+      - ./fastapi_app:/app
     ports:
       - "8000:8000"
     env_file:
       - .env
     depends_on:
       - db
+      - redis
+      - celery_app
 
-  celery:
+  celery_app:
     build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: celery
-    command: python -m celery -A celery_tasks.app_worker worker
+      context: ./celery_app
+    container_name: celery_app
+    command: uvicorn main:app --host 0.0.0.0 --port 5000
     restart: always
     volumes:
-      - ./app_data:/var/lib/data
+      - ./celery_app:/app
+    ports:
+      - "5000:5000"
     env_file:
       - .env
     depends_on:
-      - app
       - redis
+
+  celery_worker:
+    build:
+      context: ./celery_app
+    container_name: celery_worker
+    command: celery -A celery_worker worker --loglevel=info
+    restart: always
+    volumes:
+      - ./celery_app:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - celery_app
+
+volumes:
+  db_data:
 ```
 
 Нужно отметить, что глобальыне переменные должны лежать в файлике .env в корне проекта. 

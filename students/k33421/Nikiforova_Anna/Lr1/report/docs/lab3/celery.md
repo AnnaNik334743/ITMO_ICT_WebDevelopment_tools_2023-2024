@@ -2,40 +2,32 @@
 
 ML-модели требовательны к ресурсам, их работа может занимать довольно много времени. Несмотря на то, что представленная в данной работе модель работает быстро, это не означает, что в дальнейшем ситуация не изменится. Запуск тяжелых вычислений через очередь позволяет не блокировать приложение (что важно в случае большого количества пользователей), а также создавать несколько инстансов модели для распределения нагрузки.
 
-Итак, очередь релаизована через Redis + Celery, где Redis выступает в том числе как брокер сообщений. Была попытка поднять RabbitMQ, но он, хотя поднимался локально, выкидывал странные ошибки с путями в докере, поэтому было решено пойти по пути наименьшего сопротивления. API иммет три эндпоинта, связанных с обработкой задач в фоновом режиме: создание задачи, проверка статуса, получение результата: 
+Модель обернута в отдельное FastAPI-приложение, а очередь реализована через Redis + Celery, где Redis выступает в том числе как брокер сообщений. Была попытка поднять RabbitMQ, но он, хотя поднимался локально, выкидывал странные ошибки с путями в докере, поэтому было решено пойти по пути наименьшего сопротивления. API иммет три эндпоинта, связанных с обработкой задач в фоновом режиме: создание задачи, проверка статуса, получение результата: 
 
 ```python
 
-@app.post('/api/process')
-async def process(ingredients_joined: str = ''):
-    try:    
-        task = {}
-        try:
-            task_id = predict.delay(ingredients_joined)
-            task['task_id'] = str(task_id)
-            task['status'] = 'PROCESSING'
-            task['url_result'] = f'/api/result/{task_id}'
-        except Exception as ex:
-            task['task_id'] = str(task_id)
-            task['status'] = 'ERROR'
-            task['url_result'] = ''
-        return JSONResponse(status_code=202, content=[task])
-    except Exception as ex:
-        return JSONResponse(status_code=400, content=[])
+app = FastAPI()
 
-@app.get('/api/result/{task_id}', response_model=Prediction)
-async def result(task_id: str):
-    task = AsyncResult(task_id)
+
+@app.post('/api/predict')
+async def create_prediction(ingredients_joined: str = ''):
+    task = predict.delay(ingredients_joined)
+    return JSONResponse(status_code=202, content={'task_id': task.id, 'status': task.status,})
+
+
+@app.get('/api/result/{task_id}')
+async def get_result(task_id: str):
+    task = AsyncResult(task_id, app=celery_app)
     if not task.ready():
-        return JSONResponse(status_code=202, content={'task_id': str(task_id), 'status': task.status, 'result': ''})
-    task_result = task.get()
-    result = task_result.get('result')
-    return JSONResponse(status_code=200, content={'task_id': str(task_id), 'status': task_result.get('status'), 'result': result})
+        return JSONResponse(status_code=202, content={'task_id': task_id, 'status': task.status, 'result': None})
+    result = task.get()
+    return JSONResponse(status_code=200, content={'task_id': task_id, 'status': task.status, 'result': result['result']})
 
-@app.get('/api/status/{task_id}', response_model=Prediction)
-async def status(task_id: str):
-    task = AsyncResult(task_id)
-    return JSONResponse(status_code=200, content={'task_id': str(task_id), 'status': task.status, 'result': ''})
+
+@app.get('/api/status/{task_id}')
+async def get_status(task_id: str):
+    task = AsyncResult(task_id, app=celery_app)
+    return JSONResponse(status_code=200, content={'task_id': task_id, 'status': task.status})
 
 ```
 
@@ -86,3 +78,63 @@ def predict(self, ingredients_joined: str) -> dict[str]:
 
 ![](static/image2.png)
 ![](static/image3.png)
+
+Основное приложение может общаться с данным через http-запросы, а именно
+
+``` python
+
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+CELERY_APP_URL = "http://celery_app:5000"
+
+...
+
+@app.post('/api/process')
+async def process(ingredients_joined: str = ''):
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(f"{CELERY_APP_URL}/api/predict?ingredients_joined={ingredients_joined}")
+            response.raise_for_status()
+            task_info = response.json()
+            return task_info
+        except httpx.HTTPStatusError as exc:
+            raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text)
+        except Exception as ex:
+            raise HTTPException(status_code=500, detail=str(ex))
+
+
+@app.get('/api/result/{task_id}')
+async def result(task_id: str):
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(f"{CELERY_APP_URL}/api/result/{task_id}")
+            response.raise_for_status()
+            task_info = response.json()
+            return task_info
+        except httpx.HTTPStatusError as exc:
+            raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text)
+        except Exception as ex:
+            raise HTTPException(status_code=500, detail=str(ex))
+
+
+@app.get('/api/status/{task_id}')
+async def status(task_id: str):
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(f"{CELERY_APP_URL}/api/status/{task_id}")
+            response.raise_for_status()
+            task_info = response.json()
+            return task_info
+        except httpx.HTTPStatusError as exc:
+            raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text)
+        except Exception as ex:
+            raise HTTPException(status_code=500, detail=str(ex))
+
+```
