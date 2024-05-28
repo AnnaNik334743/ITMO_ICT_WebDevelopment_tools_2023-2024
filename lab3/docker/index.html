@@ -677,7 +677,7 @@
   <h1>Docker</h1>
 
 <div><p>Реализованное приложение было упаковано в Docker, чтобы во фразе "it works on my machine" не возникало слово "only".</p>
-<p>Dockerfile:
+<p>Dockerfile celery_app:
 </p><div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>FROM python:3.10
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>WORKDIR /app
@@ -685,63 +685,92 @@
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>COPY . .
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>RUN pip install --no-cache-dir -r requirements.txt
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
+</code></pre></div>
+<p>Dockerfile fastapi_app:
+</p><div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>FROM python:3.10
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>WORKDIR /app
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>COPY . .
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>RUN pip install --no-cache-dir -r requirements.txt
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 </code></pre></div>
 <p>docker-compose.yml:
-</p><div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>version: "1.0"
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>services:
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  db:
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    image: postgres:14.1
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    hostname: ${DB_HOST}
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    container_name: db
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    restart: always
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    volumes:
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>      - ./db_data:/var/lib/postgresql/data
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    environment:
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>      - POSTGRES_USER=${DB_USER}
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>      - POSTGRES_PASSWORD=${DB_PASSWORD}
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>      - POSTGRES_DB=${DB_NAME}
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    env_file:
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>      - .env
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>  redis:
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    image: redis:7.2.4
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    hostname: ${REDIS_HOST}
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    container_name: redis
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    ports:
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>      - "6379:6379"
-<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>    restart: always
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>
-<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>  app:
-<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>    build:
-<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>      context: .
-<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>      dockerfile: Dockerfile
-<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>    container_name: app
-<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>    restart: always
-<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>    volumes:
-<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>      - ./app_data:/var/lib/data
-<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>    ports:
-<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>      - "8000:8000"
-<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>    env_file:
-<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>      - .env
-<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>    depends_on:
-<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a>      - db
-<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a>
-<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a>  celery:
-<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a>    build:
-<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a>      context: .
-<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a>      dockerfile: Dockerfile
-<a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a>    container_name: celery
-<a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a>    command: python -m celery -A celery_tasks.app_worker worker
-<a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a>    restart: always
-<a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a>    volumes:
-<a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a>      - ./app_data:/var/lib/data
-<a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a>    env_file:
-<a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a>      - .env
-<a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a>    depends_on:
-<a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a>      - app
-<a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a>      - redis
+</p><div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>version: "3.0"
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>services:
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  db:
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    image: postgres:14.1
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    container_name: db
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    restart: always
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    volumes:
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>      - db_data:/var/lib/postgresql/data
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    environment:
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>      - POSTGRES_USER=${DB_USER}
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>      - POSTGRES_PASSWORD=${DB_PASSWORD}
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>      - POSTGRES_DB=${DB_NAME}
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    env_file:
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>      - .env
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>  redis:
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    image: redis:7.2.4
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>    container_name: redis
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>    ports:
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>      - "6379:6379"
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>    restart: always
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>  fastapi_app:
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>    build:
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>      context: ./fastapi_app
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>    container_name: fastapi_app
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>    command: uvicorn main:app --host 0.0.0.0 --port 8000
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>    restart: always
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>    volumes:
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>      - ./fastapi_app:/app
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>    ports:
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>      - "8000:8000"
+<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>    env_file:
+<a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>      - .env
+<a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>    depends_on:
+<a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>      - db
+<a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>      - redis
+<a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>      - celery_app
+<a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a>
+<a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a>  celery_app:
+<a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>    build:
+<a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a>      context: ./celery_app
+<a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a>    container_name: celery_app
+<a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a>    command: uvicorn main:app --host 0.0.0.0 --port 5000
+<a id="__codelineno-2-46" name="__codelineno-2-46" href="#__codelineno-2-46"></a>    restart: always
+<a id="__codelineno-2-47" name="__codelineno-2-47" href="#__codelineno-2-47"></a>    volumes:
+<a id="__codelineno-2-48" name="__codelineno-2-48" href="#__codelineno-2-48"></a>      - ./celery_app:/app
+<a id="__codelineno-2-49" name="__codelineno-2-49" href="#__codelineno-2-49"></a>    ports:
+<a id="__codelineno-2-50" name="__codelineno-2-50" href="#__codelineno-2-50"></a>      - "5000:5000"
+<a id="__codelineno-2-51" name="__codelineno-2-51" href="#__codelineno-2-51"></a>    env_file:
+<a id="__codelineno-2-52" name="__codelineno-2-52" href="#__codelineno-2-52"></a>      - .env
+<a id="__codelineno-2-53" name="__codelineno-2-53" href="#__codelineno-2-53"></a>    depends_on:
+<a id="__codelineno-2-54" name="__codelineno-2-54" href="#__codelineno-2-54"></a>      - redis
+<a id="__codelineno-2-55" name="__codelineno-2-55" href="#__codelineno-2-55"></a>
+<a id="__codelineno-2-56" name="__codelineno-2-56" href="#__codelineno-2-56"></a>  celery_worker:
+<a id="__codelineno-2-57" name="__codelineno-2-57" href="#__codelineno-2-57"></a>    build:
+<a id="__codelineno-2-58" name="__codelineno-2-58" href="#__codelineno-2-58"></a>      context: ./celery_app
+<a id="__codelineno-2-59" name="__codelineno-2-59" href="#__codelineno-2-59"></a>    container_name: celery_worker
+<a id="__codelineno-2-60" name="__codelineno-2-60" href="#__codelineno-2-60"></a>    command: celery -A celery_worker worker --loglevel=info
+<a id="__codelineno-2-61" name="__codelineno-2-61" href="#__codelineno-2-61"></a>    restart: always
+<a id="__codelineno-2-62" name="__codelineno-2-62" href="#__codelineno-2-62"></a>    volumes:
+<a id="__codelineno-2-63" name="__codelineno-2-63" href="#__codelineno-2-63"></a>      - ./celery_app:/app
+<a id="__codelineno-2-64" name="__codelineno-2-64" href="#__codelineno-2-64"></a>    env_file:
+<a id="__codelineno-2-65" name="__codelineno-2-65" href="#__codelineno-2-65"></a>      - .env
+<a id="__codelineno-2-66" name="__codelineno-2-66" href="#__codelineno-2-66"></a>    depends_on:
+<a id="__codelineno-2-67" name="__codelineno-2-67" href="#__codelineno-2-67"></a>      - redis
+<a id="__codelineno-2-68" name="__codelineno-2-68" href="#__codelineno-2-68"></a>      - celery_app
+<a id="__codelineno-2-69" name="__codelineno-2-69" href="#__codelineno-2-69"></a>
+<a id="__codelineno-2-70" name="__codelineno-2-70" href="#__codelineno-2-70"></a>volumes:
+<a id="__codelineno-2-71" name="__codelineno-2-71" href="#__codelineno-2-71"></a>  db_data:
 </code></pre></div>
 <p>Нужно отметить, что глобальыне переменные должны лежать в файлике .env в корне проекта. </p></div>
 
